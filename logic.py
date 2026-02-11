@@ -87,33 +87,36 @@ class GBIEngine:
         additional_savings_needed = 0
 
         if not is_feasible:
+            # 수학적으로는 음수 수익률에서도 PMT 역산이 가능하지만,
+            # 손실 자산에 추가 납입을 유도하는 것은 합리적 재무 의사결정이 아니라고 판단
+            # 따라서 음수 수익률 구간에서는 역산 결과를 제공하지 않음
             if nominal_after_tax_rate <= 0:
                 required_monthly_deposit = None
                 additional_savings_needed = None
             else:
-            # 목표 금액의 명목 가치 환산 (인플레이션 감안)
-            # "3년 뒤의 1억(현재가치)"을 모으려면 "3년 뒤 통장에 1억*물가상승분"이 있어야 함
-            target_nominal = target_amount * total_inflation_factor
-            
-            # 현재 보유 자산(PV)으로 커버 가능한 명목 금액 차감
-            shortfall_nominal = target_nominal - fv_pv_nominal
-            
-            # 부족분(Shortfall)을 메우기 위한 PMT 역산
-            if shortfall_nominal > 0:
-                # PMT = FV / Annuity_Factor
-                # (앞서 구한 annuity_factor 재사용)
-                if annuity_factor != 0:
-                    required_monthly_deposit = shortfall_nominal / annuity_factor
-                else:
-                    required_monthly_deposit = shortfall_nominal  # 0개월인 경우
-            
-            # 추가 필요 금액 (Required - Current)
-            additional_savings_needed = required_monthly_deposit - monthly_deposit
-            
-            # (음수 방어: PV만으로 이미 달성 가능한 경우)
-            if additional_savings_needed < 0:
-                additional_savings_needed = 0
-                required_monthly_deposit = 0
+                # 목표 금액의 명목 가치 환산 (인플레이션 감안)
+                # "3년 뒤의 1억(현재가치)"을 모으려면 "3년 뒤 통장에 1억*물가상승분"이 있어야 함
+                target_nominal = target_amount * total_inflation_factor
+                
+                # 현재 보유 자산(PV)으로 커버 가능한 명목 금액 차감
+                shortfall_nominal = target_nominal - fv_pv_nominal
+                
+                # 부족분(Shortfall)을 메우기 위한 PMT 역산
+                if shortfall_nominal > 0:
+                    # PMT = FV / Annuity_Factor
+                    # (앞서 구한 annuity_factor 재사용)
+                    if annuity_factor != 0:
+                        required_monthly_deposit = shortfall_nominal / annuity_factor
+                    else:
+                        required_monthly_deposit = shortfall_nominal  # 0개월인 경우
+                
+                # 추가 필요 금액 (Required - Current)
+                additional_savings_needed = required_monthly_deposit - monthly_deposit
+                
+                # (음수 방어: PV만으로 이미 달성 가능한 경우)
+                if additional_savings_needed < 0:
+                    additional_savings_needed = 0
+                    required_monthly_deposit = 0
 
         return {
             "nominal_fv": round(total_fv_nominal, 0),
@@ -122,6 +125,6 @@ class GBIEngine:
             "attainment_rate": round(attainment_rate, 1),
             "is_feasible": is_feasible,
             # [추가됨] 역산 결과
-            "required_monthly_deposit": round(required_monthly_deposit, 0),
-            "additional_savings_needed": round(additional_savings_needed, 0)
+            "required_monthly_deposit": round(required_monthly_deposit, 0) if required_monthly_deposit is not None else None,
+            "additional_savings_needed": round(additional_savings_needed, 0) if additional_savings_needed is not None else None
         }
