@@ -13,7 +13,7 @@
 
 
 * GitHub: https://github.com/KO-JUNSUNG/GBI.git
-* 배포 URL: 
+* 배포 URL: https://noah-gbi-engine.streamlit.app/
 
 
 ## 2. 문제 정의
