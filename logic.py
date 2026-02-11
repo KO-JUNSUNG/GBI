@@ -90,6 +90,50 @@ class GBIEngine:
         additional_needed = max(required_pmt - monthly_deposit, 0)
 
         return required_pmt, additional_needed
+    # -----------------------------
+    # +. generate timeseries: UI는 표현만 담당할 수 있도록 시계열 생성도 백엔드에서 처리
+    # -----------------------------
+    def generate_timeseries(self,
+                            current_savings,
+                            monthly_deposit,
+                            annual_return_rate,
+                            years,
+                            inflation_rate=0.02,
+                            is_begin_period=False):
+
+        years = float(years)
+        months = int(years * 12)
+
+        after_tax_rate = self.calculate_after_tax_return(annual_return_rate)
+        monthly_rate = self.annual_to_monthly_rate(after_tax_rate)
+
+        values_nominal = []
+        values_real = []
+
+        balance = current_savings
+
+        for m in range(months + 1):
+
+            # 기록
+            inflation_factor = (1 + inflation_rate) ** (m / 12)
+            values_nominal.append(balance)
+            values_real.append(balance / inflation_factor)
+
+            # 다음 달로 진행
+            if is_begin_period:
+                balance += monthly_deposit
+
+            balance *= (1 + monthly_rate)
+
+            if not is_begin_period:
+                balance += monthly_deposit
+
+        return {
+            "months": list(range(months + 1)),
+            "nominal": values_nominal,
+            "real": values_real
+        }
+
 
     # -----------------------------
     # 6. 시뮬레이션 오케스트레이터
